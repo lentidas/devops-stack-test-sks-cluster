@@ -1,4 +1,6 @@
 terraform {
+  # We could store the state file on an Exoscale bucket, but there is no DynamoDB equivalent neither encryption, as far as I know.
+  # https://github.com/exoscale/terraform-provider-exoscale/tree/master/examples/sos-backend
   backend "s3" {
     encrypt        = true
     bucket         = "camptocamp-aws-is-sandbox-terraform-state"
@@ -12,8 +14,7 @@ terraform {
       source  = "exoscale/exoscale"
       version = "~> 0.47"
     }
-    # TODO Consider storing the state file in a remote Exoscale backend instead of AWS
-    aws = { # Needed to store the state file in S3
+    aws = { # Needed to store the state file in S3 and to create S3 buckets
       source  = "hashicorp/aws"
       version = "~> 4"
     }
@@ -29,5 +30,27 @@ terraform {
       source  = "oboukili/argocd"
       version = "~> 4"
     }
+    keycloak = {
+      source  = "mrparkers/keycloak"
+      version = "~> 4"
+    }
   }
+}
+
+# Skip validations specific to AWS in order to use this provider for Exoscale services
+provider "aws" {
+  endpoints {
+    s3 = "https://sos-${local.zone}.exo.io"
+  }
+
+  region = local.zone
+
+  access_key = resource.exoscale_iam_access_key.s3_iam_key.key
+  secret_key = resource.exoscale_iam_access_key.s3_iam_key.secret
+
+  # Skip AWS validations
+  skip_credentials_validation = true
+  skip_requesting_account_id  = true
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
 }

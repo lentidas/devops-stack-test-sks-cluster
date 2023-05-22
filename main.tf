@@ -168,3 +168,86 @@ module "oidc" {
   }
 }
 
+module "loki-stack" {
+  # TODO Use an sks variant
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//kind?ref=v2.0.2"
+
+  cluster_name     = module.sks.cluster_name
+  base_domain      = module.sks.base_domain
+  argocd_namespace = module.argocd_bootstrap.argocd_namespace
+
+  distributed_mode = true
+
+  logs_storage = {
+    bucket_name       = resource.aws_s3_bucket.this["loki"].id
+    endpoint          = resource.aws_s3_bucket.this["loki"].bucket_domain_name
+    access_key        = resource.exoscale_iam_access_key.s3_iam_key.key
+    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key.secret
+  }
+
+  dependency_ids = {
+    argocd = module.argocd_bootstrap.id
+  }
+}
+
+module "thanos" {
+  # TODO Use an sks variant
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//kind?ref=v1.0.0"
+
+  cluster_name     = module.sks.cluster_name
+  base_domain      = module.sks.base_domain
+  cluster_issuer   = local.cluster_issuer
+  argocd_namespace = module.argocd_bootstrap.argocd_namespace
+
+  metrics_storage = {
+    bucket_name       = resource.aws_s3_bucket.this["thanos"].id
+    endpoint          = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
+    access_key        = resource.exoscale_iam_access_key.s3_iam_key.key
+    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key.secret
+  }
+
+  thanos = {
+    oidc = module.oidc.oidc
+  }
+
+  dependency_ids = {
+    argocd       = module.argocd_bootstrap.id
+    traefik      = module.traefik.id
+    cert-manager = module.cert-manager.id
+    oidc         = module.oidc.id
+  }
+}
+
+module "kube-prometheus-stack" {
+  # TODO Use an sks variant
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//kind?ref=v2.3.0"
+
+  cluster_name     = module.sks.cluster_name
+  base_domain      = module.sks.base_domain
+  cluster_issuer   = local.cluster_issuer
+  argocd_namespace = module.argocd_bootstrap.argocd_namespace
+
+  metrics_storage = {
+    bucket     = resource.aws_s3_bucket.this["thanos"].id
+    endpoint   = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
+    access_key = resource.exoscale_iam_access_key.s3_iam_key.key
+    secret_key = resource.exoscale_iam_access_key.s3_iam_key.secret
+  }
+
+  prometheus = {
+    oidc = module.oidc.oidc
+  }
+  alertmanager = {
+    oidc = module.oidc.oidc
+  }
+  grafana = {
+    oidc = module.oidc.oidc
+  }
+
+  dependency_ids = {
+    argocd       = module.argocd_bootstrap.id
+    traefik      = module.traefik.id
+    cert-manager = module.cert-manager.id
+    oidc         = module.oidc.id
+  }
+}
