@@ -1,7 +1,6 @@
 ### Ignored files and folders ###
 
 .terraform*
-secrets.yml
 
 
 ### macOS ###

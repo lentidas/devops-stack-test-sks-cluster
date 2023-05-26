@@ -20,7 +20,10 @@ resource "aws_s3_bucket" "this" {
 }
 
 resource "exoscale_iam_access_key" "s3_iam_key" {
-  name = "${local.cluster_name}-s3-iam-key"
+  for_each = toset(local.s3_buckets)
+
+  name      = "${local.cluster_name}-${each.key}-s3-iam-key"
+  resources = ["sos/bucket:${local.cluster_name}-${each.key}"]
   operations = [
     # FIXME Put the minimum permissions possible, for now I included all the possible permissions for the SOS service.
     "abort-sos-multipart-upload",
@@ -53,5 +56,9 @@ resource "exoscale_iam_access_key" "s3_iam_key" {
     "put-sos-object-acl",
     "put-sos-object-legal-hold",
     "put-sos-object-retention",
+  ]
+
+  depends_on = [
+    aws_s3_bucket.this,
   ]
 }

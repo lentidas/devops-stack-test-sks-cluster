@@ -62,7 +62,7 @@ module "sks" {
   # router_nodepool = "${local.cluster_name}-router"
   nodepools = {
     "${local.cluster_name}-default" = {
-      size            = 2
+      size            = 3
       instance_type   = "standard.large"
       description     = "Default nodepool for ${local.cluster_name}."
       instance_prefix = null
@@ -109,8 +109,21 @@ module "argocd_bootstrap" {
   depends_on = [module.sks]
 }
 
+module "longhorn" {
+  source          = "../../devops-stack-module-longhorn"
+  target_revision = "dev"
+
+  cluster_name     = module.sks.cluster_name
+  base_domain      = module.sks.base_domain
+  argocd_namespace = module.argocd_bootstrap.argocd_namespace
+
+  dependency_ids = {
+    argocd = module.argocd_bootstrap.id
+  }
+}
+
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v1.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v1.2.1"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -120,7 +133,7 @@ module "traefik" {
   router_nodepool_id      = module.sks.router_nodepool_id
   router_instance_pool_id = module.sks.router_instance_pool_id
 
-  # enable_service_monitor = local.enable_service_monitor # TODO Enable when Christian merges his PR
+  enable_service_monitor = local.enable_service_monitor
 
   dependency_ids = {
     argocd = module.argocd_bootstrap.id
@@ -128,8 +141,7 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//self-signed?ref=v3.1.0"
-  source = "../../devops-stack-module-cert-manager/sks"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//self-signed?ref=v4.0.0"
 
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
@@ -181,8 +193,8 @@ module "loki-stack" {
   logs_storage = {
     bucket_name       = resource.aws_s3_bucket.this["loki"].id
     endpoint          = resource.aws_s3_bucket.this["loki"].bucket_domain_name
-    access_key        = resource.exoscale_iam_access_key.s3_iam_key.key
-    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key.secret
+    access_key        = resource.exoscale_iam_access_key.s3_iam_key["loki"].key
+    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key["loki"].secret
   }
 
   dependency_ids = {
@@ -190,33 +202,33 @@ module "loki-stack" {
   }
 }
 
-module "thanos" {
-  # TODO Use an sks variant
-  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//kind?ref=v1.0.0"
+# module "thanos" {
+#   # TODO Use an sks variant
+#   source = "git::https://github.com/camptocamp/devops-stack-module-thanos//kind?ref=v1.0.0"
 
-  cluster_name     = module.sks.cluster_name
-  base_domain      = module.sks.base_domain
-  cluster_issuer   = local.cluster_issuer
-  argocd_namespace = module.argocd_bootstrap.argocd_namespace
+#   cluster_name     = module.sks.cluster_name
+#   base_domain      = module.sks.base_domain
+#   cluster_issuer   = local.cluster_issuer
+#   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
-  metrics_storage = {
-    bucket_name       = resource.aws_s3_bucket.this["thanos"].id
-    endpoint          = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
-    access_key        = resource.exoscale_iam_access_key.s3_iam_key.key
-    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key.secret
-  }
+#   metrics_storage = {
+#     bucket_name       = resource.aws_s3_bucket.this["thanos"].id
+#     endpoint          = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
+#     access_key        = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
+#     secret_access_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
+#   }
 
-  thanos = {
-    oidc = module.oidc.oidc
-  }
+#   thanos = {
+#     oidc = module.oidc.oidc
+#   }
 
-  dependency_ids = {
-    argocd       = module.argocd_bootstrap.id
-    traefik      = module.traefik.id
-    cert-manager = module.cert-manager.id
-    oidc         = module.oidc.id
-  }
-}
+#   dependency_ids = {
+#     argocd       = module.argocd_bootstrap.id
+#     traefik      = module.traefik.id
+#     cert-manager = module.cert-manager.id
+#     oidc         = module.oidc.id
+#   }
+# }
 
 module "kube-prometheus-stack" {
   # TODO Use an sks variant
@@ -227,12 +239,12 @@ module "kube-prometheus-stack" {
   cluster_issuer   = local.cluster_issuer
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
-  metrics_storage = {
-    bucket     = resource.aws_s3_bucket.this["thanos"].id
-    endpoint   = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
-    access_key = resource.exoscale_iam_access_key.s3_iam_key.key
-    secret_key = resource.exoscale_iam_access_key.s3_iam_key.secret
-  }
+  # metrics_storage = {
+  #   bucket     = resource.aws_s3_bucket.this["thanos"].id
+  #   endpoint   = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
+  #   access_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
+  #   secret_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
+  # }
 
   prometheus = {
     oidc = module.oidc.oidc

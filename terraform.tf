@@ -14,7 +14,7 @@ terraform {
       source  = "exoscale/exoscale"
       version = "~> 0.47"
     }
-    aws = { # Needed to store the state file in S3 and to create S3 buckets
+    aws = { # Needed to store the state file in S3 and to create S3 buckets (provider configuration bellow)
       source  = "hashicorp/aws"
       version = "~> 4"
     }
@@ -37,7 +37,6 @@ terraform {
   }
 }
 
-# Skip validations specific to AWS in order to use this provider for Exoscale services
 provider "aws" {
   endpoints {
     s3 = "https://sos-${local.zone}.exo.io"
@@ -45,10 +44,10 @@ provider "aws" {
 
   region = local.zone
 
-  access_key = resource.exoscale_iam_access_key.s3_iam_key.key
-  secret_key = resource.exoscale_iam_access_key.s3_iam_key.secret
+  access_key = var.exoscale_iam_key
+  secret_key = var.exoscale_iam_secret
 
-  # Skip AWS validations
+  # Skip validations specific to AWS in order to use this provider for Exoscale services
   skip_credentials_validation = true
   skip_requesting_account_id  = true
   skip_metadata_api_check     = true
