@@ -109,16 +109,58 @@ module "argocd_bootstrap" {
   depends_on = [module.sks]
 }
 
+module "argocd" {
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=fix/oidc-ca-certificate-staging"
+
+  cluster_name             = module.sks.cluster_name
+  base_domain              = module.sks.base_domain
+  cluster_issuer           = local.cluster_issuer
+  server_secretkey         = module.argocd_bootstrap.argocd_server_secretkey
+  accounts_pipeline_tokens = module.argocd_bootstrap.argocd_accounts_pipeline_tokens
+
+  oidc = {
+    name         = "OIDC"
+    issuer       = module.oidc.oidc.issuer_url
+    clientID     = module.oidc.oidc.client_id
+    clientSecret = module.oidc.oidc.client_secret
+    requestedIDTokenClaims = {
+      groups = {
+        essential = true
+      }
+    }
+  }
+
+  dependency_ids = {
+    traefik               = module.traefik.id
+    cert-manager          = module.cert-manager.id
+    oidc                  = module.oidc.id
+    kube-prometheus-stack = module.kube-prometheus-stack.id
+  }
+}
+
 module "longhorn" {
-  source          = "../../devops-stack-module-longhorn"
+  source          = "../devops-stack-module-longhorn"
   target_revision = "dev"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
+  cluster_issuer   = local.cluster_issuer
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
+  enable_service_monitor   = true
+  enable_dashboard_ingress = true
+
+  oidc = {
+    enabled       = true
+    issuer_url    = format("https://keycloak.apps.%s.%s/realms/devops-stack", module.sks.cluster_name, module.sks.base_domain)
+    redirect_url  = format("https://longhorn.apps.%s.%s/oauth2/callback", module.sks.cluster_name, module.sks.base_domain)
+    client_id     = module.oidc.oidc.client_id
+    client_secret = module.oidc.oidc.client_secret
+  }
+
   dependency_ids = {
-    argocd = module.argocd_bootstrap.id
+    argocd                = module.argocd_bootstrap.id
+    kube-prometheus-stack = module.kube-prometheus-stack.id
   }
 }
 
@@ -141,11 +183,22 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//self-signed?ref=v4.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v4.0.1"
 
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
   enable_service_monitor = local.enable_service_monitor
+
+  helm_values = [{
+    letsencrypt = {
+      issuers = {
+        letsencrypt-staging = {
+          email  = "letsencrypt@camptocamp.com"
+          server = "https://acme-staging-v02.api.letsencrypt.org/directory"
+        }
+      }
+    }
+  }]
 
   dependency_ids = {
     argocd = module.argocd_bootstrap.id
@@ -198,7 +251,8 @@ module "loki-stack" {
   }
 
   dependency_ids = {
-    argocd = module.argocd_bootstrap.id
+    argocd   = module.argocd_bootstrap.id
+    longhorn = module.longhorn.id
   }
 }
 
