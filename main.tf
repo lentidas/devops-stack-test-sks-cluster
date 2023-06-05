@@ -50,16 +50,16 @@ provider "keycloak" {
 module "sks" {
   # source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=v1.0.0"
   source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=ISDEVOPS-212-initial-implementation"
+  # source = "../../devops-stack-module-cluster-sks"
 
   cluster_name       = local.cluster_name
   kubernetes_version = local.kubernetes_version
   zone               = local.zone
   # base_domain        = local.base_domain # TODO Check with Christian how to properly deploy a domain on Exoscale as for now I can create it but the DNS does not propagate
-  domain_id = resource.exoscale_domain.domain.id
 
-  service_level = "starter"
+  cni           = "cilium"
+  service_level = local.service_level
 
-  # router_nodepool = "${local.cluster_name}-router"
   nodepools = {
     "${local.cluster_name}-default" = {
       size            = 3
@@ -104,22 +104,9 @@ module "sks" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v1.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v1.1.2"
 
   depends_on = [module.sks]
-}
-
-module "longhorn" {
-  source          = "../../devops-stack-module-longhorn"
-  target_revision = "dev"
-
-  cluster_name     = module.sks.cluster_name
-  base_domain      = module.sks.base_domain
-  argocd_namespace = module.argocd_bootstrap.argocd_namespace
-
-  dependency_ids = {
-    argocd = module.argocd_bootstrap.id
-  }
 }
 
 module "traefik" {
@@ -141,7 +128,7 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//self-signed?ref=v4.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v4.0.2"
 
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
@@ -175,36 +162,66 @@ module "oidc" {
   base_domain    = module.sks.base_domain
   cluster_issuer = local.cluster_issuer
 
+  user_map = {
+    gheleno = {
+      username   = "gheleno"
+      email      = "goncalo.heleno@camptocamp.com"
+      first_name = "Gonçalo"
+      last_name  = "Heleno"
+    },
+  }
+
   dependency_ids = {
     keycloak = module.keycloak.id
   }
 }
 
-module "loki-stack" {
-  # TODO Use an sks variant
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//kind?ref=v2.0.2"
+module "longhorn" {
+  source          = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=dev-proposal"
+  target_revision = "dev-proposal"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
+  cluster_issuer   = local.cluster_issuer
+  argocd_namespace = module.argocd_bootstrap.argocd_namespace
+
+  enable_service_monitor = local.enable_service_monitor
+
+  enable_dashboard_ingress = true
+  oidc                     = module.oidc.oidc
+
+  dependency_ids = {
+    argocd   = module.argocd_bootstrap.id
+    keycloak = module.keycloak.id
+    oidc     = module.oidc.id
+  }
+}
+
+module "loki-stack" {
+  # source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//kind?ref=v2.2.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//kind?ref=ISDEVOPS-224-add-sks-variant"
+
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
   distributed_mode = true
 
   logs_storage = {
     bucket_name       = resource.aws_s3_bucket.this["loki"].id
-    endpoint          = resource.aws_s3_bucket.this["loki"].bucket_domain_name
+    region            = resource.aws_s3_bucket.this["loki"].region
     access_key        = resource.exoscale_iam_access_key.s3_iam_key["loki"].key
     secret_access_key = resource.exoscale_iam_access_key.s3_iam_key["loki"].secret
   }
 
   dependency_ids = {
-    argocd = module.argocd_bootstrap.id
+    argocd   = module.argocd_bootstrap.id
+    longhorn = module.longhorn.id
   }
 }
 
 # module "thanos" {
 #   # TODO Use an sks variant
-#   source = "git::https://github.com/camptocamp/devops-stack-module-thanos//kind?ref=v1.0.0"
+#   # TODO Add proper connection to S3 bucket
+#   source = "git::https://github.com/camptocamp/devops-stack-module-thanos//kind?ref=v1.0.1"
 
 #   cluster_name     = module.sks.cluster_name
 #   base_domain      = module.sks.base_domain
@@ -232,7 +249,8 @@ module "loki-stack" {
 
 module "kube-prometheus-stack" {
   # TODO Use an sks variant
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//kind?ref=v2.3.0"
+  # TODO Add nodeToleration to node-exporter if needed (it does seem node exporter is properly corrected, just check out why :D )
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//kind?ref=v3.1.0"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -261,5 +279,36 @@ module "kube-prometheus-stack" {
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
     oidc         = module.oidc.id
+    loki-stack   = module.loki-stack.id
+    longhorn     = module.longhorn.id
+  }
+}
+
+module "argocd" {
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v1.1.2"
+
+  cluster_name             = module.sks.cluster_name
+  base_domain              = module.sks.base_domain
+  cluster_issuer           = local.cluster_issuer
+  server_secretkey         = module.argocd_bootstrap.argocd_server_secretkey
+  accounts_pipeline_tokens = module.argocd_bootstrap.argocd_accounts_pipeline_tokens
+
+  oidc = {
+    name         = "OIDC"
+    issuer       = module.oidc.oidc.issuer_url
+    clientID     = module.oidc.oidc.client_id
+    clientSecret = module.oidc.oidc.client_secret
+    requestedIDTokenClaims = {
+      groups = {
+        essential = true
+      }
+    }
+  }
+
+  dependency_ids = {
+    traefik               = module.traefik.id
+    cert-manager          = module.cert-manager.id
+    oidc                  = module.oidc.id
+    kube-prometheus-stack = module.kube-prometheus-stack.id
   }
 }
