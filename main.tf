@@ -50,7 +50,6 @@ provider "keycloak" {
 module "sks" {
   # source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=v1.0.0"
   source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=ISDEVOPS-212-initial-implementation"
-  # source = "../../devops-stack-module-cluster-sks"
 
   cluster_name       = local.cluster_name
   kubernetes_version = local.kubernetes_version
@@ -177,8 +176,8 @@ module "oidc" {
 }
 
 module "longhorn" {
-  source          = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=dev-proposal"
-  target_revision = "dev-proposal"
+  source          = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=dev"
+  target_revision = "dev"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -198,8 +197,8 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//kind?ref=v2.2.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//kind?ref=ISDEVOPS-224-add-sks-variant"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=v2.2.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=ISDEVOPS-224-add-sks-variant"
 
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
