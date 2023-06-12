@@ -1,5 +1,6 @@
 locals {
   s3_buckets = [
+    "longhorn",
     "loki",
     "thanos",
   ]

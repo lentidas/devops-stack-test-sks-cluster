@@ -47,11 +47,10 @@ module "helloworld_apps" {
               domain: "${module.sks.base_domain}"
               issuer: "${local.cluster_issuer}"
             apps:
-              traefik_dashboard: false
+              longhorn: true
               grafana: true
               prometheus: true
               thanos: true
-              alertmanager: true
           EOT
         }
       }

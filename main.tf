@@ -103,7 +103,7 @@ module "sks" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v1.1.2"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v2.0.0"
 
   depends_on = [module.sks]
 }
@@ -176,8 +176,8 @@ module "oidc" {
 }
 
 module "longhorn" {
-  source          = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=dev"
-  target_revision = "dev"
+  source          = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=dev-proposal"
+  target_revision = "dev-proposal"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -188,6 +188,15 @@ module "longhorn" {
 
   enable_dashboard_ingress = true
   oidc                     = module.oidc.oidc
+
+  enable_pv_backups = true
+  backup_storage = {
+    bucket_name       = resource.aws_s3_bucket.this["longhorn"].id
+    bucket_region     = resource.aws_s3_bucket.this["longhorn"].region
+    endpoint          = "sos-ch-gv-2.exo.io"
+    access_key        = resource.exoscale_iam_access_key.s3_iam_key["longhorn"].key
+    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key["longhorn"].secret
+  }
 
   dependency_ids = {
     argocd   = module.argocd_bootstrap.id
@@ -205,10 +214,10 @@ module "loki-stack" {
   distributed_mode = true
 
   logs_storage = {
-    bucket_name       = resource.aws_s3_bucket.this["loki"].id
-    region            = resource.aws_s3_bucket.this["loki"].region
-    access_key        = resource.exoscale_iam_access_key.s3_iam_key["loki"].key
-    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key["loki"].secret
+    bucket_name = resource.aws_s3_bucket.this["loki"].id
+    region      = resource.aws_s3_bucket.this["loki"].region
+    access_key  = resource.exoscale_iam_access_key.s3_iam_key["loki"].key
+    secret_key  = resource.exoscale_iam_access_key.s3_iam_key["loki"].secret
   }
 
   dependency_ids = {
@@ -217,51 +226,50 @@ module "loki-stack" {
   }
 }
 
-# module "thanos" {
-#   # TODO Use an sks variant
-#   # TODO Add proper connection to S3 bucket
-#   source = "git::https://github.com/camptocamp/devops-stack-module-thanos//kind?ref=v1.0.1"
-
-#   cluster_name     = module.sks.cluster_name
-#   base_domain      = module.sks.base_domain
-#   cluster_issuer   = local.cluster_issuer
-#   argocd_namespace = module.argocd_bootstrap.argocd_namespace
-
-#   metrics_storage = {
-#     bucket_name       = resource.aws_s3_bucket.this["thanos"].id
-#     endpoint          = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
-#     access_key        = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
-#     secret_access_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
-#   }
-
-#   thanos = {
-#     oidc = module.oidc.oidc
-#   }
-
-#   dependency_ids = {
-#     argocd       = module.argocd_bootstrap.id
-#     traefik      = module.traefik.id
-#     cert-manager = module.cert-manager.id
-#     oidc         = module.oidc.id
-#   }
-# }
-
-module "kube-prometheus-stack" {
-  # TODO Use an sks variant
-  # TODO Add nodeToleration to node-exporter if needed (it does seem node exporter is properly corrected, just check out why :D )
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//kind?ref=v3.1.0"
+module "thanos" {
+  # source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=v1.0.1"
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=ISDEVOPS-145-add-sks-variant"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
   cluster_issuer   = local.cluster_issuer
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
-  # metrics_storage = {
-  #   bucket     = resource.aws_s3_bucket.this["thanos"].id
-  #   endpoint   = resource.aws_s3_bucket.this["thanos"].bucket_domain_name
-  #   access_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
-  #   secret_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
-  # }
+  metrics_storage = {
+    bucket_name = resource.aws_s3_bucket.this["thanos"].id
+    region      = resource.aws_s3_bucket.this["thanos"].region
+    access_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
+    secret_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
+  }
+
+  thanos = {
+    oidc = module.oidc.oidc
+  }
+
+  dependency_ids = {
+    argocd       = module.argocd_bootstrap.id
+    traefik      = module.traefik.id
+    cert-manager = module.cert-manager.id
+    oidc         = module.oidc.id
+  }
+}
+
+module "kube-prometheus-stack" {
+  # TODO Add nodeToleration to node-exporter if needed (it does seem node exporter is properly corrected, just check out why :D )
+  # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v3.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=ISDEVOPS-136-add-sks-variant"
+
+  cluster_name     = module.sks.cluster_name
+  base_domain      = module.sks.base_domain
+  cluster_issuer   = local.cluster_issuer
+  argocd_namespace = module.argocd_bootstrap.argocd_namespace
+
+  metrics_storage = {
+    bucket_name = resource.aws_s3_bucket.this["thanos"].id
+    region      = resource.aws_s3_bucket.this["thanos"].region
+    access_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
+    secret_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
+  }
 
   prometheus = {
     oidc = module.oidc.oidc
@@ -284,7 +292,7 @@ module "kube-prometheus-stack" {
 }
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v1.1.2"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v2.0.0"
 
   cluster_name             = module.sks.cluster_name
   base_domain              = module.sks.base_domain
