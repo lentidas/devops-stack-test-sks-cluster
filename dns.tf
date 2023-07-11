@@ -1,7 +1,6 @@
 # Requires a subscription to Exoscale DNS service, which should be mannually activated on the web console.
 # If using nip.io, which is deployed automatically, both these resources are not needed.
 
-# TODO Uncomment when using proper DNS configuration
 # resource "exoscale_domain" "domain" {
 #   name = local.base_domain
 # }

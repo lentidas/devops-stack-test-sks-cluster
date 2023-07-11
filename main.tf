@@ -20,7 +20,7 @@ provider "helm" {
 }
 
 provider "argocd" {
-  server_addr                 = "127.0.0.1:8080"
+  server_addr                 = "placeholder.camptocamp.com" # Needed for the bootstrap, otherwise the port-forwarding is what it's used.
   auth_token                  = module.argocd_bootstrap.argocd_auth_token
   insecure                    = true
   plain_text                  = true
@@ -48,68 +48,37 @@ provider "keycloak" {
 # Module declarations and configuration
 
 module "sks" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=v1.0.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=ISDEVOPS-212-initial-implementation"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=v1.0.0"
 
   cluster_name       = local.cluster_name
   kubernetes_version = local.kubernetes_version
   zone               = local.zone
-  # base_domain        = local.base_domain # TODO Check with Christian how to properly deploy a domain on Exoscale as for now I can create it but the DNS does not propagate
+  base_domain        = local.base_domain
 
-  cni           = "cilium"
-  service_level = local.service_level
+  cni                    = "cilium"
+  service_level          = local.service_level
+  create_kubeconfig_file = true
 
   nodepools = {
     "${local.cluster_name}-default" = {
       size            = 3
       instance_type   = "standard.large"
-      description     = "Default nodepool for ${local.cluster_name}."
-      instance_prefix = null
-      disk_size       = null
-
-      labels              = {}
-      taints              = {}
-      private_network_ids = null
+      description     = "Default node pool for ${local.cluster_name}."
+      instance_prefix = "default"
     },
-    # "${local.cluster_name}-router" = {
-    #   size            = 2
-    #   instance_type   = "standard.small"
-    #   description     = "Router nodepool for ${local.cluster_name} used to avoid loopbacks"
-    #   instance_prefix = null
-    #   disk_size       = null
-
-    #   labels = {
-    #     role = "router"
-    #   }
-    #   taints = {
-    #     router = "router:NoSchedule"
-    #   }
-    #   private_network_ids = null
-    # },
-    # "${local.cluster_name}-monitoring" = {
-    #   size            = 2
-    #   instance_type   = "standard.large"
-    #   description     = "Monitoring nodepool for ${local.cluster_name}"
-    #   instance_prefix = null
-    #   disk_size       = 150
-
-    #   labels = {
-    #     role = "monitoring"
-    #   }
-    #   taints              = {}
-    #   private_network_ids = null
-    # },
   }
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v2.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v3.1.0"
+  # source = "../../devops-stack-module-argocd/bootstrap"
 
   depends_on = [module.sks]
 }
 
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v1.2.1"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v2.0.0"
+  # source = "../../devops-stack-module-traefik/sks"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -127,7 +96,8 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v4.0.2"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v5.0.0"
+  # source = "../../devops-stack-module-cert-manager/sks"
 
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
@@ -140,7 +110,8 @@ module "cert-manager" {
 
 # TODO Create an external database as PoC
 module "keycloak" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak?ref=v1.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak?ref=v2.0.0"
+  # source = "../../devops-stack-module-keycloak"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -155,7 +126,7 @@ module "keycloak" {
 }
 
 module "oidc" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak//oidc_bootstrap?ref=v1.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak//oidc_bootstrap?ref=v2.0.0"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
@@ -176,8 +147,8 @@ module "oidc" {
 }
 
 module "longhorn" {
-  source          = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=dev-proposal"
-  target_revision = "dev-proposal"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v2.0.0"
+  # source          = "../../devops-stack-module-longhorn"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -191,24 +162,27 @@ module "longhorn" {
 
   enable_pv_backups = true
   backup_storage = {
-    bucket_name       = resource.aws_s3_bucket.this["longhorn"].id
-    bucket_region     = resource.aws_s3_bucket.this["longhorn"].region
-    endpoint          = "sos-ch-gv-2.exo.io"
-    access_key        = resource.exoscale_iam_access_key.s3_iam_key["longhorn"].key
-    secret_access_key = resource.exoscale_iam_access_key.s3_iam_key["longhorn"].secret
+    bucket_name = resource.aws_s3_bucket.this["longhorn"].id
+    region      = resource.aws_s3_bucket.this["longhorn"].region
+    endpoint    = "sos-${resource.aws_s3_bucket.this["longhorn"].region}.exo.io"
+    access_key  = resource.exoscale_iam_access_key.s3_iam_key["longhorn"].key
+    secret_key  = resource.exoscale_iam_access_key.s3_iam_key["longhorn"].secret
   }
 
   dependency_ids = {
-    argocd   = module.argocd_bootstrap.id
-    keycloak = module.keycloak.id
-    oidc     = module.oidc.id
+    argocd       = module.argocd_bootstrap.id
+    traefik      = module.traefik.id
+    cert-manager = module.cert-manager.id
+    keycloak     = module.keycloak.id
+    oidc         = module.oidc.id
   }
 }
 
 module "loki-stack" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=v2.2.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=ISDEVOPS-224-add-sks-variant"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=v4.0.0"
+  # source = "../../devops-stack-module-loki-stack/sks"
 
+  cluster_id       = module.sks.cluster_id
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
   distributed_mode = true
@@ -227,12 +201,13 @@ module "loki-stack" {
 }
 
 module "thanos" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=v1.0.1"
-  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=ISDEVOPS-145-add-sks-variant"
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=v2.0.0"
+  # source          = "../../devops-stack-module-thanos/sks"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
   cluster_issuer   = local.cluster_issuer
+  cluster_id       = module.sks.cluster_id
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
   metrics_storage = {
@@ -250,14 +225,15 @@ module "thanos" {
     argocd       = module.argocd_bootstrap.id
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
+    keycloak     = module.keycloak.id
     oidc         = module.oidc.id
+    longhorn     = module.longhorn.id
   }
 }
 
 module "kube-prometheus-stack" {
-  # TODO Add nodeToleration to node-exporter if needed (it does seem node exporter is properly corrected, just check out why :D )
-  # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v3.1.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=ISDEVOPS-136-add-sks-variant"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v5.0.0"
+  # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -285,20 +261,47 @@ module "kube-prometheus-stack" {
     argocd       = module.argocd_bootstrap.id
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
+    keycloak     = module.keycloak.id
     oidc         = module.oidc.id
-    loki-stack   = module.loki-stack.id
     longhorn     = module.longhorn.id
+    loki-stack   = module.loki-stack.id
   }
 }
 
+# ╷
+# │ Error: Error while waiting for application kube-prometheus-stack to be created
+# │ 
+# │   with module.kube-prometheus-stack.module.kube-prometheus-stack.argocd_application.this,
+# │   on .terraform/modules/kube-prometheus-stack/main.tf line 76, in resource "argocd_application" "this":
+# │   76: resource "argocd_application" "this" {
+# │ 
+# │ error while waiting for application kube-prometheus-stack to be synced and healthy: rpc error: code = Unavailable desc = connection error: desc = "transport: error while dialing: dial tcp 127.0.0.1:33081: connect: connection refused"
+# ╵
+
+# -------
+
+# ╷
+# │ Error: Error while waiting for application argocd to be created
+# │ 
+# │   with module.argocd.argocd_application.this,
+# │   on .terraform/modules/argocd/main.tf line 55, in resource "argocd_application" "this":
+# │   55: resource "argocd_application" "this" {
+# │ 
+# │ error while waiting for application argocd to be synced and healthy: rpc error: code = Unavailable desc = connection error: desc = "transport: error while dialing: dial tcp 127.0.0.1:43377: connect: connection refused"
+# ╵
+
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v2.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v3.1.0"
+  # source = "../../devops-stack-module-argocd"
 
   cluster_name             = module.sks.cluster_name
   base_domain              = module.sks.base_domain
   cluster_issuer           = local.cluster_issuer
   server_secretkey         = module.argocd_bootstrap.argocd_server_secretkey
   accounts_pipeline_tokens = module.argocd_bootstrap.argocd_accounts_pipeline_tokens
+
+  admin_enabled = true
+  exec_enabled  = true
 
   oidc = {
     name         = "OIDC"
@@ -310,6 +313,13 @@ module "argocd" {
         essential = true
       }
     }
+  }
+
+  rbac = {
+    policy_csv = <<-EOT
+      g, pipeline, role:admin
+      g, devops-stack-admins, role:admin
+    EOT
   }
 
   dependency_ids = {
