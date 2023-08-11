@@ -1,6 +1,6 @@
 terraform {
-  # We could store the state file on an Exoscale bucket, but there is no DynamoDB equivalent neither encryption, as far as I know.
-  # https://github.com/exoscale/terraform-provider-exoscale/tree/master/examples/sos-backend
+  # We could store the state file on an Exoscale bucket, but there is no DynamoDB equivalent neither encryption, 
+  # as far as I know. See https://github.com/exoscale/terraform-provider-exoscale/tree/master/examples/sos-backend
   backend "s3" {
     encrypt        = true
     bucket         = "camptocamp-aws-is-sandbox-terraform-state"
@@ -28,7 +28,7 @@ terraform {
     }
     argocd = {
       source  = "oboukili/argocd"
-      version = "~> 5"
+      version = "~> 6"
     }
     keycloak = {
       source  = "mrparkers/keycloak"
@@ -52,4 +52,45 @@ provider "aws" {
   skip_requesting_account_id  = true
   skip_metadata_api_check     = true
   skip_region_validation      = true
+}
+
+# The providers configurations below depend on the output of some of the modules declared on other *tf files.
+# However, for clarity and ease of maintenance we grouped them all together in this section.
+
+provider "kubernetes" {
+  host                   = module.sks.kubernetes_host
+  client_certificate     = module.sks.kubernetes_client_certificate
+  client_key             = module.sks.kubernetes_client_key
+  cluster_ca_certificate = module.sks.kubernetes_cluster_ca_certificate
+}
+
+provider "helm" {
+  kubernetes {
+    host                   = module.sks.kubernetes_host
+    client_certificate     = module.sks.kubernetes_client_certificate
+    client_key             = module.sks.kubernetes_client_key
+    cluster_ca_certificate = module.sks.kubernetes_cluster_ca_certificate
+  }
+}
+
+provider "argocd" {
+  auth_token                  = module.argocd_bootstrap.argocd_auth_token
+  port_forward_with_namespace = module.argocd_bootstrap.argocd_namespace
+  insecure                    = true
+  plain_text                  = true
+  kubernetes {
+    host                   = module.sks.kubernetes_host
+    client_certificate     = module.sks.kubernetes_client_certificate
+    client_key             = module.sks.kubernetes_client_key
+    cluster_ca_certificate = module.sks.kubernetes_cluster_ca_certificate
+  }
+}
+
+provider "keycloak" {
+  client_id                = "admin-cli"
+  username                 = module.keycloak.admin_credentials.username
+  password                 = module.keycloak.admin_credentials.password
+  url                      = "https://keycloak.apps.${module.sks.cluster_name}.${module.sks.base_domain}"
+  tls_insecure_skip_verify = true # Can be disabled/removed when using letsencrypt-prod as cluster issuer
+  initial_login            = false
 }

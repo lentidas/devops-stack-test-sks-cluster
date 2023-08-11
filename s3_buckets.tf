@@ -25,12 +25,14 @@ resource "exoscale_iam_access_key" "s3_iam_key" {
 
   name      = "${local.cluster_name}-${each.key}-s3-iam-key"
   resources = ["sos/bucket:${local.cluster_name}-${each.key}"]
+
+  # Probably not all these permissions are needed. However, these IAM keys are resource-scoped, so there should be no 
+  # issue. The only SOS permissions commented out are the ones related to the creation and deletion of an SOS bucket.
   operations = [
-    # FIXME Put the minimum permissions possible, for now I included all the possible permissions for the SOS service.
     "abort-sos-multipart-upload",
     "by-pass-sos-governance-retention",
-    "create-sos-bucket",
-    "delete-sos-bucket",
+    # "create-sos-bucket",
+    # "delete-sos-bucket",
     "delete-sos-object",
     "get-sos-bucket-acl",
     "get-sos-bucket-cors",
