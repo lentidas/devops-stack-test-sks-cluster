@@ -4,16 +4,13 @@ name: "Scheduled/Manual terraform destroy"
 on:
   workflow_dispatch:
   schedule:
-  - cron: "0 18 * * 1-5" # Run the terraform destroy every workday at 18h UTC
+  - cron: "0 17 * * 1-5" # Run the terraform destroy every workday at 18h UTC
 
 jobs:
   terraform-manual-destroy:
     runs-on: ubuntu-latest
     env:
       TF_ACTION_WORKING_DIR: .
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
     steps:
 
