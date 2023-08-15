@@ -1,6 +1,6 @@
 locals {
   kubernetes_version       = "1.27.4"
-  cluster_name             = "gh-sks-cluster"
+  cluster_name             = "gh-sks-cluster" # Must be unique for each DevOps Stack deployment in a single account.
   zone                     = "ch-gva-2"
   service_level            = "starter"
   base_domain              = "is-sandbox-exo.camptocamp.com"
