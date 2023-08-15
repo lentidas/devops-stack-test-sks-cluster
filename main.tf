@@ -20,7 +20,7 @@ module "sks" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v3.1.3"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=chart-autoupdate-minor-argocd"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   depends_on = [module.sks]
@@ -193,7 +193,7 @@ module "thanos" {
 }
 
 module "kube-prometheus-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v6.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v6.1.1"
   # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
   cluster_name     = module.sks.cluster_name
@@ -254,8 +254,10 @@ module "kube-prometheus-stack" {
 # ╵
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v3.1.3"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=chart-autoupdate-minor-argocd"
   # source = "../../devops-stack-module-argocd"
+
+  target_revision = "chart-autoupdate-minor-argocd"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
