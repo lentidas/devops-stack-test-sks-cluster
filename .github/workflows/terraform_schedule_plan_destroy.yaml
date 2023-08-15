@@ -31,7 +31,7 @@ jobs:
       run: "terraform init -no-color"
     
     - name: "Delete some resources on the state file"
-      run: 'terraform state rm $(terraform-bin state list | grep "argocd_application\|argocd_project\|kubernetes_\|helm_")'
+      run: 'terraform state rm $(terraform-bin state list | grep "argocd_application\|argocd_project\|kubernetes_\|helm_\|keycloak_")'
       continue-on-error: true # This is to avoid failed workflows and the consequent noise when the scheduled destroy runs on the days we have not created the test deployment
 
     - name: "Run terraform destroy"
