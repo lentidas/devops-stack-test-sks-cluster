@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TF_ACTION_WORKING_DIR: .
+      TF_VAR_exoscale_iam_key: ${{ secrets.EXOSCALE_API_KEY }}
+      TF_VAR_exoscale_iam_secret: ${{ secrets.EXOSCALE_API_SECRET }}
 
     steps:
 
