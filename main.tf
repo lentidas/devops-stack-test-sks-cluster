@@ -101,7 +101,7 @@ module "oidc" {
 }
 
 module "longhorn" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v2.1.1"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v2.2.0"
   # source = "../../devops-stack-module-longhorn"
 
   # target_revision = "chart-autoupdate-minor-longhorn"
