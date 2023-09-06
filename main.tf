@@ -15,12 +15,13 @@ module "sks" {
       instance_type   = "standard.large"
       description     = "Default node pool for ${local.cluster_name}."
       instance_prefix = "default"
+      disk_size       = 100
     },
   }
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=chart-autoupdate-minor-argocd"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v3.3.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   depends_on = [module.sks]
@@ -103,8 +104,6 @@ module "oidc" {
 module "longhorn" {
   source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v2.2.0"
   # source = "../../devops-stack-module-longhorn"
-
-  # target_revision = "chart-autoupdate-minor-longhorn"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -254,10 +253,8 @@ module "kube-prometheus-stack" {
 # ╵
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=chart-autoupdate-minor-argocd"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v3.3.0"
   # source = "../../devops-stack-module-argocd"
-
-  target_revision = "chart-autoupdate-minor-argocd"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
