@@ -21,7 +21,7 @@ module "sks" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v3.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v3.4.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   depends_on = [module.sks]
@@ -135,15 +135,13 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=v4.0.2"
-  # source = "../../devops-stack-module-loki-stack/sks"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=v4.0.2"
+  source = "../../devops-stack-module-loki-stack/sks"
 
   cluster_id       = module.sks.cluster_id
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
 
   app_autosync = local.app_autosync
-
-  distributed_mode = true
 
   logs_storage = {
     bucket_name = resource.aws_s3_bucket.this["loki"].id
@@ -159,8 +157,10 @@ module "loki-stack" {
 }
 
 module "thanos" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=v2.2.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=v2.4.0"
   # source          = "../../devops-stack-module-thanos/sks"
+
+  # target_revision = "chart-autoupdate-patch-thanos"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -192,8 +192,10 @@ module "thanos" {
 }
 
 module "kube-prometheus-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v6.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v7.0.0"
   # source = "../../devops-stack-module-kube-prometheus-stack/sks"
+
+  # target_revision = "chart-autoupdate-major-kube-prometheus-stack"
 
   cluster_name     = module.sks.cluster_name
   base_domain      = module.sks.base_domain
@@ -253,8 +255,10 @@ module "kube-prometheus-stack" {
 # ╵
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v3.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v3.4.0"
   # source = "../../devops-stack-module-argocd"
+
+  # target_revision = "chart-autoupdate-minor-argocd"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
