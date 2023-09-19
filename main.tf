@@ -63,7 +63,7 @@ module "cert-manager" {
 
 # TODO Create an external database as PoC
 module "keycloak" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak?ref=v2.0.1"
+  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git?ref=v2.0.1"
   # source = "../../devops-stack-module-keycloak"
 
   cluster_name     = module.sks.cluster_name
@@ -81,7 +81,7 @@ module "keycloak" {
 }
 
 module "oidc" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak//oidc_bootstrap?ref=v2.0.1"
+  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git//oidc_bootstrap?ref=v2.0.1"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
@@ -135,8 +135,8 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack//sks?ref=v4.0.2"
-  source = "../../devops-stack-module-loki-stack/sks"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v4.0.2"
+  # source = "../../devops-stack-module-loki-stack/sks"
 
   cluster_id       = module.sks.cluster_id
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
@@ -157,7 +157,7 @@ module "loki-stack" {
 }
 
 module "thanos" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-thanos//sks?ref=v2.4.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v2.4.0"
   # source          = "../../devops-stack-module-thanos/sks"
 
   # target_revision = "chart-autoupdate-patch-thanos"
@@ -192,7 +192,7 @@ module "thanos" {
 }
 
 module "kube-prometheus-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack//sks?ref=v7.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v7.0.0"
   # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
   # target_revision = "chart-autoupdate-major-kube-prometheus-stack"
