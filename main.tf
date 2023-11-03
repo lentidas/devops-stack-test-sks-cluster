@@ -135,7 +135,7 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v5.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v5.2.0"
   # source = "../../devops-stack-module-loki-stack/sks"
 
   cluster_id       = module.sks.cluster_id
