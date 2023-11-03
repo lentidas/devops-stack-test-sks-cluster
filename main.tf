@@ -157,7 +157,7 @@ module "loki-stack" {
 }
 
 module "thanos" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v2.6.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v2.7.0"
   # source          = "../../devops-stack-module-thanos/sks"
 
   # target_revision = "chart-autoupdate-patch-thanos"
