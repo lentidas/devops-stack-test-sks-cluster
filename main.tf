@@ -55,7 +55,7 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v7.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v7.0.1"
   # source = "../../devops-stack-module-cert-manager/sks"
 
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
