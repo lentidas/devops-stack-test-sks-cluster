@@ -21,8 +21,7 @@ module "sks" {
 }
 
 module "argocd_bootstrap" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v3.4.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=ISDEVOPS-243-cluster-destination-variable"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v3.5.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   argocd_projects = {
@@ -35,8 +34,7 @@ module "argocd_bootstrap" {
 }
 
 module "traefik" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v4.0.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=ISDEVOPS-248"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v4.1.0"
   # source = "../../devops-stack-module-traefik/sks"
 
   cluster_name     = module.sks.cluster_name
@@ -57,7 +55,7 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v6.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v7.0.0"
   # source = "../../devops-stack-module-cert-manager/sks"
 
   argocd_namespace = module.argocd_bootstrap.argocd_namespace
@@ -65,6 +63,8 @@ module "cert-manager" {
 
   app_autosync           = local.app_autosync
   enable_service_monitor = local.enable_service_monitor
+
+  letsencrypt_issuer_email = "letsencrypt@camptocamp.com"
 
   dependency_ids = {
     argocd = module.argocd_bootstrap.id
@@ -147,8 +147,7 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v5.2.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=ISDEVOPS-248"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v6.0.0"
   # source = "../../devops-stack-module-loki-stack/sks"
 
   cluster_id       = module.sks.cluster_id
@@ -269,11 +268,8 @@ module "kube-prometheus-stack" {
 # ╵
 
 module "argocd" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v3.4.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=ISDEVOPS-243-cluster-destination-variable"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v3.5.0"
   # source = "../../devops-stack-module-argocd"
-
-  # target_revision = "chart-autoupdate-minor-argocd"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
