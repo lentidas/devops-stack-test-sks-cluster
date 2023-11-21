@@ -44,7 +44,7 @@ jobs:
       continue-on-error: true # This is in order to continue even if there is an error so we can get the output
 
     - name: "Add a comment to the PR with the result of the previous steps"
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       if: github.event_name == 'pull_request'
       env:
         VALIDATE: "$ terraform validate\n${{ steps.validate.outputs.stdout }}"
