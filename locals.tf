@@ -5,7 +5,7 @@ locals {
   service_level            = "starter"
   base_domain              = "is-sandbox-exo.camptocamp.com"
   activate_wildcard_record = true
-  cluster_issuer           = "letsencrypt-staging"
+  cluster_issuer           = module.cert-manager.cluster_issuers.staging
   enable_service_monitor   = false # Can be enabled after the first bootstrap
   app_autosync             = true ? { allow_empty = false, prune = true, self_heal = true } : {}
 }
