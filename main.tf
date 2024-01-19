@@ -144,7 +144,7 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v6.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v7.0.0"
   # source = "../../devops-stack-module-loki-stack/sks"
 
   argocd_project = module.sks.cluster_name
