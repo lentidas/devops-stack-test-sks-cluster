@@ -7,6 +7,6 @@ locals {
   activate_wildcard_record = true
   cluster_issuer           = module.cert-manager.cluster_issuers.staging
   letsencrypt_issuer_email = "letsencrypt@camptocamp.com"
-  enable_service_monitor   = true # Can be enabled after the first bootstrap
+  enable_service_monitor   = false # Can be enabled after the first bootstrap.
   app_autosync             = true ? { allow_empty = false, prune = true, self_heal = true } : {}
 }
