@@ -34,7 +34,7 @@ module "argocd_bootstrap" {
 }
 
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v5.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v6.1.1"
   # source = "../../devops-stack-module-traefik/sks"
 
   cluster_name   = module.sks.cluster_name
