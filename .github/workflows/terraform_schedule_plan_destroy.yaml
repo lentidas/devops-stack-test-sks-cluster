@@ -7,7 +7,7 @@ on:
   - cron: "0 17 * * 1-5" # Run the terraform destroy every workday at 18h UTC
 
 jobs:
-  terraform-manual-destroy:
+  terraform-destroy:
     runs-on: ubuntu-latest
     env:
       TF_ACTION_WORKING_DIR: .
