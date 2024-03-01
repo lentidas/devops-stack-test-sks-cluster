@@ -204,7 +204,7 @@ module "thanos" {
 }
 
 module "kube-prometheus-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v9.2.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v9.2.1"
   # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
   cluster_name   = module.sks.cluster_name
