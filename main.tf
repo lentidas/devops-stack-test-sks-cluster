@@ -111,7 +111,7 @@ module "oidc" {
 }
 
 module "longhorn" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.3.1"
   # source = "../../devops-stack-module-longhorn"
 
   cluster_name   = module.sks.cluster_name
