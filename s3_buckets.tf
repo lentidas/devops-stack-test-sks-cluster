@@ -7,6 +7,8 @@ locals {
 }
 
 resource "aws_s3_bucket" "this" {
+  provider = aws.exoscale-s3
+
   for_each = toset(local.s3_buckets)
 
   bucket        = "${local.cluster_name}-${each.key}"

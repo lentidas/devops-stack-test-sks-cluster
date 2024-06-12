@@ -37,7 +37,11 @@ terraform {
   }
 }
 
+provider "aws" {}
+
 provider "aws" {
+  alias = "exoscale-s3"
+
   endpoints {
     s3 = "https://sos-${local.zone}.exo.io"
   }
