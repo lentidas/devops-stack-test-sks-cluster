@@ -55,6 +55,35 @@ module "argocd_bootstrap" {
   depends_on = [module.sks]
 }
 
+module "secrets" {
+  # source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//aws_secrets_manager?ref=feat/initial_implementation"
+  source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//k8s_secrets?ref=feat/initial_implementation"
+  # source = "../../devops-stack-module-secrets/aws_secrets_manager"
+  # source = "../../devops-stack-module-secrets/k8s_secrets"
+
+  target_revision = "feat/initial_implementation"
+
+  cluster_name   = module.sks.cluster_name
+  base_domain    = module.sks.base_domain
+  argocd_project = module.sks.cluster_name
+
+  app_autosync           = local.app_autosync
+  enable_service_monitor = local.enable_service_monitor
+
+  # aws_iam_access_key = {
+  #   create_iam_access_key = true
+  # }
+
+  metrics_storage_secret = {
+    access_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
+    secret_key = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
+  }
+
+  dependency_ids = {
+    argocd = module.argocd_bootstrap.id
+  }
+}
+
 module "traefik" {
   source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v6.3.0"
   # source = "../../devops-stack-module-traefik/sks"
@@ -226,19 +255,23 @@ module "kube-prometheus-stack" {
   source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v11.1.1"
   # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
+  target_revision = "ISDEVOPS-296"
+
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
   subdomain      = local.subdomain
   cluster_issuer = local.cluster_issuer
   argocd_project = module.sks.cluster_name
+  secrets_names  = module.secrets.secrets_names
 
   app_autosync = local.app_autosync
 
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
     region      = resource.aws_s3_bucket.this["thanos"].region
-    access_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
-    secret_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
+    # TODO Remove this after we release the External Secrets support
+    # access_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
+    # secret_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
   }
 
   prometheus = {
@@ -253,6 +286,7 @@ module "kube-prometheus-stack" {
 
   dependency_ids = {
     argocd       = module.argocd_bootstrap.id
+    secrets      = module.secrets.id
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
     oidc         = module.oidc.id
@@ -260,28 +294,6 @@ module "kube-prometheus-stack" {
     loki-stack   = module.loki-stack.id
   }
 }
-
-# ╷
-# │ Error: Error while waiting for application kube-prometheus-stack to be created
-# │ 
-# │   with module.kube-prometheus-stack.module.kube-prometheus-stack.argocd_application.this,
-# │   on .terraform/modules/kube-prometheus-stack/main.tf line 76, in resource "argocd_application" "this":
-# │   76: resource "argocd_application" "this" {
-# │ 
-# │ error while waiting for application kube-prometheus-stack to be synced and healthy: rpc error: code = Unavailable desc = connection error: desc = "transport: error while dialing: dial tcp 127.0.0.1:33081: connect: connection refused"
-# ╵
-
-# -------
-
-# ╷
-# │ Error: Error while waiting for application argocd to be created
-# │ 
-# │   with module.argocd.argocd_application.this,
-# │   on .terraform/modules/argocd/main.tf line 55, in resource "argocd_application" "this":
-# │   55: resource "argocd_application" "this" {
-# │ 
-# │ error while waiting for application argocd to be synced and healthy: rpc error: code = Unavailable desc = connection error: desc = "transport: error while dialing: dial tcp 127.0.0.1:43377: connect: connection refused"
-# ╵
 
 module "argocd" {
   source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v5.1.0"
