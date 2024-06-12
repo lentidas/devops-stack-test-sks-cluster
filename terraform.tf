@@ -37,7 +37,9 @@ terraform {
   }
 }
 
-# provider "aws" {}
+provider "aws" {
+  region = "eu-west-1"
+}
 
 provider "aws" {
   alias = "exoscale-s3"
