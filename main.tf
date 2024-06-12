@@ -22,6 +22,26 @@ module "sks" {
   }
 }
 
+module "oidc" {
+  source = "git::https://github.com/camptocamp/devops-stack-module-oidc-aws-cognito.git?ref=v1.1.0"
+  # source = "../../devops-stack-module-oidc-aws-cognito"
+
+  cluster_name = module.sks.cluster_name
+  base_domain  = module.sks.base_domain
+  subdomain    = local.subdomain
+
+  create_pool = true
+
+  user_map = {
+    gheleno = {
+      username   = "gheleno"
+      email      = "goncalo.heleno@camptocamp.com"
+      first_name = "Gonçalo"
+      last_name  = "Heleno"
+    }
+  }
+}
+
 module "argocd_bootstrap" {
   source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v4.4.1"
   # source = "../../devops-stack-module-argocd/bootstrap"
@@ -69,47 +89,47 @@ module "cert-manager" {
   }
 }
 
-# TODO Create an external database as PoC
-module "keycloak" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git?ref=v3.1.1"
-  # source = "../../devops-stack-module-keycloak"
+# # TODO Create an external database as PoC
+# module "keycloak" {
+#   source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git?ref=v3.1.1"
+#   # source = "../../devops-stack-module-keycloak"
 
-  cluster_name   = module.sks.cluster_name
-  base_domain    = module.sks.base_domain
-  subdomain      = local.subdomain
-  cluster_issuer = local.cluster_issuer
-  argocd_project = module.sks.cluster_name
+#   cluster_name   = module.sks.cluster_name
+#   base_domain    = module.sks.base_domain
+#   subdomain      = local.subdomain
+#   cluster_issuer = local.cluster_issuer
+#   argocd_project = module.sks.cluster_name
 
-  app_autosync = local.app_autosync
+#   app_autosync = local.app_autosync
 
-  dependency_ids = {
-    argocd       = module.argocd_bootstrap.id
-    traefik      = module.traefik.id
-    cert-manager = module.cert-manager.id
-  }
-}
+#   dependency_ids = {
+#     argocd       = module.argocd_bootstrap.id
+#     traefik      = module.traefik.id
+#     cert-manager = module.cert-manager.id
+#   }
+# }
 
-module "oidc" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git//oidc_bootstrap?ref=v3.1.1"
+# module "oidc" {
+#   source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git//oidc_bootstrap?ref=v3.1.1"
 
-  cluster_name   = module.sks.cluster_name
-  base_domain    = module.sks.base_domain
-  subdomain      = local.subdomain
-  cluster_issuer = local.cluster_issuer
+#   cluster_name   = module.sks.cluster_name
+#   base_domain    = module.sks.base_domain
+#   subdomain      = local.subdomain
+#   cluster_issuer = local.cluster_issuer
 
-  user_map = {
-    gheleno = {
-      username   = "gheleno"
-      email      = "goncalo.heleno@camptocamp.com"
-      first_name = "Gonçalo"
-      last_name  = "Heleno"
-    },
-  }
+#   user_map = {
+#     gheleno = {
+#       username   = "gheleno"
+#       email      = "goncalo.heleno@camptocamp.com"
+#       first_name = "Gonçalo"
+#       last_name  = "Heleno"
+#     },
+#   }
 
-  dependency_ids = {
-    keycloak = module.keycloak.id
-  }
-}
+#   dependency_ids = {
+#     keycloak = module.keycloak.id
+#   }
+# }
 
 module "longhorn" {
   source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.5.0"
@@ -141,7 +161,6 @@ module "longhorn" {
     argocd       = module.argocd_bootstrap.id
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
-    keycloak     = module.keycloak.id
     oidc         = module.oidc.id
   }
 }
@@ -198,7 +217,6 @@ module "thanos" {
     argocd       = module.argocd_bootstrap.id
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
-    keycloak     = module.keycloak.id
     oidc         = module.oidc.id
     longhorn     = module.longhorn.id
   }
@@ -237,7 +255,6 @@ module "kube-prometheus-stack" {
     argocd       = module.argocd_bootstrap.id
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
-    keycloak     = module.keycloak.id
     oidc         = module.oidc.id
     longhorn     = module.longhorn.id
     loki-stack   = module.loki-stack.id
@@ -285,7 +302,7 @@ module "argocd" {
   exec_enabled  = true
 
   oidc = {
-    name         = "Keycloak"
+    name         = "Cognito"
     issuer       = module.oidc.oidc.issuer_url
     clientID     = module.oidc.oidc.client_id
     clientSecret = module.oidc.oidc.client_secret
@@ -294,7 +311,22 @@ module "argocd" {
         essential = true
       }
     }
+    requestedScopes = [
+      "openid", "profile", "email"
+    ]
   }
+
+  # oidc = {
+  #   name         = "Keycloak"
+  #   issuer       = module.oidc.oidc.issuer_url
+  #   clientID     = module.oidc.oidc.client_id
+  #   clientSecret = module.oidc.oidc.client_secret
+  #   requestedIDTokenClaims = {
+  #     groups = {
+  #       essential = true
+  #     }
+  #   }
+  # }
 
   rbac = {
     policy_csv = <<-EOT
