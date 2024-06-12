@@ -37,7 +37,7 @@ terraform {
   }
 }
 
-provider "aws" {}
+# provider "aws" {}
 
 provider "aws" {
   alias = "exoscale-s3"
