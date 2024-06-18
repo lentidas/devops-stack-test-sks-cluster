@@ -19,6 +19,7 @@ jobs:
       TF_ACTION_WORKING_DIR: .
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION}}
       EXOSCALE_API_KEY: ${{ secrets.EXOSCALE_API_KEY }}
       EXOSCALE_API_SECRET: ${{ secrets.EXOSCALE_API_SECRET }}
       TF_VAR_exoscale_iam_key: ${{ secrets.EXOSCALE_API_KEY }}
