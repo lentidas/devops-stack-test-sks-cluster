@@ -272,22 +272,14 @@ module "kube-prometheus-stack" {
 
   app_autosync = local.app_autosync
 
+  oidc = module.oidc.oidc
+
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
     region      = resource.aws_s3_bucket.this["thanos"].region
     # TODO Remove this after we release the External Secrets support
     # access_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].key
     # secret_key  = resource.exoscale_iam_access_key.s3_iam_key["thanos"].secret
-  }
-
-  prometheus = {
-    oidc = module.oidc.oidc
-  }
-  alertmanager = {
-    oidc = module.oidc.oidc
-  }
-  grafana = {
-    oidc = module.oidc.oidc
   }
 
   dependency_ids = {
