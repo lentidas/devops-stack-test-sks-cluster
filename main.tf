@@ -40,6 +40,11 @@ module "oidc" {
       last_name  = "Heleno"
     }
   }
+
+  callback_urls = [
+    format("https://longhorn.%s/oauth2/callback", trimprefix("${local.subdomain}.${local.base_domain}", ".")),
+    format("https://longhorn.%s.%s/oauth2/callback", trimprefix("${local.subdomain}.${local.cluster_name}", "."), local.base_domain),
+  ]
 }
 
 module "argocd_bootstrap" {
