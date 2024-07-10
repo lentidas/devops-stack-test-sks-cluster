@@ -294,7 +294,7 @@ module "kube-prometheus-stack" {
 }
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v5.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v5.3.0"
   # source = "../../devops-stack-module-argocd"
 
   cluster_name   = module.sks.cluster_name
