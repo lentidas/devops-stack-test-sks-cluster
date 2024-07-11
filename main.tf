@@ -90,7 +90,7 @@ module "secrets" {
 }
 
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v6.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v7.0.0"
   # source = "../../devops-stack-module-traefik/sks"
 
   argocd_project = module.sks.cluster_name
