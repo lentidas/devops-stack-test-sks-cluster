@@ -1,9 +1,9 @@
 locals {
-  s3_buckets = [
-    "longhorn",
+  s3_buckets = compact([
+    local.exoscale_csi ? null : "longhorn",
     "loki",
     "thanos",
-  ]
+  ])
 }
 
 resource "aws_s3_bucket" "this" {

@@ -8,6 +8,7 @@ module "sks" {
   base_domain        = data.exoscale_domain.domain.name
   subdomain          = local.subdomain
 
+  # exoscale_csi  = local.exoscale_csi
   service_level = local.service_level
   # create_kubeconfig_file = true
 
@@ -166,7 +167,9 @@ module "cert-manager" {
 # }
 
 module "longhorn" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.5.0"
+  count = local.exoscale_csi ? 0 : 1
+
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.6.0"
   # source = "../../devops-stack-module-longhorn"
 
   cluster_name   = module.sks.cluster_name
@@ -218,7 +221,7 @@ module "loki-stack" {
 
   dependency_ids = {
     argocd   = module.argocd_bootstrap.id
-    longhorn = module.longhorn.id
+    longhorn = local.exoscale_csi ? null : module.longhorn[0].id
   }
 }
 
@@ -252,7 +255,7 @@ module "thanos" {
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
     oidc         = module.oidc.id
-    longhorn     = module.longhorn.id
+    longhorn     = local.exoscale_csi ? null : module.longhorn[0].id
   }
 }
 
@@ -288,7 +291,7 @@ module "kube-prometheus-stack" {
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
     oidc         = module.oidc.id
-    longhorn     = module.longhorn.id
+    longhorn     = local.exoscale_csi ? null : module.longhorn[0].id
     loki-stack   = module.loki-stack.id
   }
 }
