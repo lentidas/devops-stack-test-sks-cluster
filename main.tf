@@ -1,5 +1,5 @@
 module "sks" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=v1.2.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cluster-sks.git?ref=v1.2.1"
   # source = "../../devops-stack-module-cluster-sks"
 
   cluster_name       = local.cluster_name
@@ -8,6 +8,7 @@ module "sks" {
   base_domain        = data.exoscale_domain.domain.name
   subdomain          = local.subdomain
 
+  cni = "calico"
   # exoscale_csi  = local.exoscale_csi
   service_level = local.service_level
   # create_kubeconfig_file = true
@@ -24,7 +25,7 @@ module "sks" {
 }
 
 module "oidc" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-oidc-aws-cognito.git?ref=v1.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-oidc-aws-cognito.git?ref=v1.1.1"
   # source = "../../devops-stack-module-oidc-aws-cognito"
 
   cluster_name = module.sks.cluster_name
@@ -49,7 +50,7 @@ module "oidc" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v5.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v5.4.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   argocd_projects = {
@@ -84,6 +85,7 @@ module "secrets" {
     access_key = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
     secret_key = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
   }
+  oidc_client_secret = module.oidc.oidc.client_secret
 
   dependency_ids = {
     argocd = module.argocd_bootstrap.id
@@ -203,12 +205,10 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v8.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v9.0.0"
   # source = "../../devops-stack-module-loki-stack/sks"
 
   argocd_project = module.sks.cluster_name
-
-  cluster_id = module.sks.cluster_id
 
   app_autosync = local.app_autosync
 
@@ -226,14 +226,13 @@ module "loki-stack" {
 }
 
 module "thanos" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v5.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v6.0.0"
   # source = "../../devops-stack-module-thanos/sks"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
   subdomain      = local.subdomain
   cluster_issuer = local.cluster_issuer
-  cluster_id     = module.sks.cluster_id
   argocd_project = module.sks.cluster_name
 
   app_autosync           = local.app_autosync
@@ -277,6 +276,16 @@ module "kube-prometheus-stack" {
 
   oidc = module.oidc.oidc
 
+  # prometheus = {
+  #   oidc = module.oidc.oidc
+  # }
+  # grafana = {
+  #   oidc = module.oidc.oidc
+  # }
+  # alertmanager = {
+  #   oidc = module.oidc.oidc
+  # }
+
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
     region      = resource.aws_s3_bucket.this["thanos"].region
@@ -297,7 +306,7 @@ module "kube-prometheus-stack" {
 }
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v5.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v5.4.0"
   # source = "../../devops-stack-module-argocd"
 
   cluster_name   = module.sks.cluster_name
