@@ -34,6 +34,10 @@ terraform {
       source  = "mrparkers/keycloak"
       version = "~> 4"
     }
+    dmsnitch = {
+      source  = "plukevdh/dmsnitch"
+      version = "0.1.5"
+    }
   }
 }
 

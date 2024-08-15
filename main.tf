@@ -50,7 +50,7 @@ module "oidc" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v5.4.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v6.0.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   argocd_projects = {
@@ -93,7 +93,7 @@ module "secrets" {
 }
 
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v7.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v8.0.0"
   # source = "../../devops-stack-module-traefik/sks"
 
   argocd_project = module.sks.cluster_name
@@ -111,7 +111,7 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v8.4.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v8.5.0"
   # source = "../../devops-stack-module-cert-manager/sks"
 
   argocd_project = module.sks.cluster_name
@@ -258,6 +258,14 @@ module "thanos" {
   }
 }
 
+resource "dmsnitch_snitch" "alertmanager_deadmanssnitch_url" {
+  name = "${module.sks.cluster_name}-deadmansnitch"
+
+  interval    = "30_minute"
+  tags        = ["sandbox"]
+  alert_email = ["is-devops-stack-alert-aaaanyw3phgkla47zgvvbtydpy@camptocamp.slack.com"]
+}
+
 module "kube-prometheus-stack" {
   # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v11.1.1"
   source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=ISDEVOPS-296"
@@ -276,16 +284,6 @@ module "kube-prometheus-stack" {
 
   oidc = module.oidc.oidc
 
-  # prometheus = {
-  #   oidc = module.oidc.oidc
-  # }
-  # grafana = {
-  #   oidc = module.oidc.oidc
-  # }
-  # alertmanager = {
-  #   oidc = module.oidc.oidc
-  # }
-
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
     region      = resource.aws_s3_bucket.this["thanos"].region
@@ -293,6 +291,8 @@ module "kube-prometheus-stack" {
     # access_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
     # secret_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
   }
+
+  alertmanager_deadmanssnitch_url = resource.dmsnitch_snitch.alertmanager_deadmanssnitch_url.url
 
   dependency_ids = {
     argocd       = module.argocd_bootstrap.id
@@ -306,7 +306,7 @@ module "kube-prometheus-stack" {
 }
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v5.4.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v6.0.0"
   # source = "../../devops-stack-module-argocd"
 
   cluster_name   = module.sks.cluster_name
