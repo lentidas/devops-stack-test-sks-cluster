@@ -50,7 +50,7 @@ module "oidc" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v6.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v6.1.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   argocd_projects = {
@@ -93,7 +93,7 @@ module "secrets" {
 }
 
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v8.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v8.1.0"
   # source = "../../devops-stack-module-traefik/sks"
 
   argocd_project = module.sks.cluster_name
@@ -111,7 +111,7 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v8.5.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v8.6.0"
   # source = "../../devops-stack-module-cert-manager/sks"
 
   argocd_project = module.sks.cluster_name
@@ -171,7 +171,7 @@ module "cert-manager" {
 module "longhorn" {
   count = local.exoscale_csi ? 0 : 1
 
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.6.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.7.0"
   # source = "../../devops-stack-module-longhorn"
 
   cluster_name   = module.sks.cluster_name
@@ -306,7 +306,7 @@ module "kube-prometheus-stack" {
 }
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v6.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v6.1.0"
   # source = "../../devops-stack-module-argocd"
 
   cluster_name   = module.sks.cluster_name
