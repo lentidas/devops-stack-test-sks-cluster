@@ -62,11 +62,19 @@ module "argocd_bootstrap" {
   depends_on = [module.sks]
 }
 
+resource "dmsnitch_snitch" "alertmanager_deadmanssnitch_url" {
+  name = "${module.sks.cluster_name}-deadmansnitch"
+
+  interval    = "30_minute"
+  tags        = ["sandbox"]
+  alert_email = ["is-devops-stack-alert-aaaanyw3phgkla47zgvvbtydpy@camptocamp.slack.com"]
+}
+
 module "secrets" {
   # source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//aws_secrets_manager?ref=feat/initial_implementation"
-  # source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
+  source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
   # source = "../../devops-stack-module-secrets/aws_secrets_manager"
-  source = "../../devops-stack-module-secrets/k8s_secrets"
+  # source = "../../devops-stack-module-secrets/k8s_secrets"
 
   target_revision = "ISDEVOPS-296"
 
@@ -265,18 +273,10 @@ module "thanos" {
   }
 }
 
-resource "dmsnitch_snitch" "alertmanager_deadmanssnitch_url" {
-  name = "${module.sks.cluster_name}-deadmansnitch"
-
-  interval    = "30_minute"
-  tags        = ["sandbox"]
-  alert_email = ["is-devops-stack-alert-aaaanyw3phgkla47zgvvbtydpy@camptocamp.slack.com"]
-}
-
 module "kube-prometheus-stack" {
   # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v11.1.1"
-  # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=ISDEVOPS-296"
-  source = "../../devops-stack-module-kube-prometheus-stack/sks"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=ISDEVOPS-296"
+  # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
   target_revision = "ISDEVOPS-296"
 
