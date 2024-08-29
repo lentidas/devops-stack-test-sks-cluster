@@ -50,7 +50,7 @@ module "oidc" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v6.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v6.3.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   argocd_projects = {
@@ -64,11 +64,11 @@ module "argocd_bootstrap" {
 
 module "secrets" {
   # source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//aws_secrets_manager?ref=feat/initial_implementation"
-  source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//k8s_secrets?ref=feat/initial_implementation"
+  # source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
   # source = "../../devops-stack-module-secrets/aws_secrets_manager"
-  # source = "../../devops-stack-module-secrets/k8s_secrets"
+  source = "../../devops-stack-module-secrets/k8s_secrets"
 
-  target_revision = "feat/initial_implementation"
+  target_revision = "ISDEVOPS-296"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
@@ -81,6 +81,10 @@ module "secrets" {
   #   create_iam_access_key = true
   # }
 
+  alertmanager_deadmanssnitch_url = resource.dmsnitch_snitch.alertmanager_deadmanssnitch_url.url
+  alertmanager_slack_routes_api_urls = {
+    "is-devops-stack-alerts-watchdog" = var.alertmanager_slack_route_api_url,
+  }
   metrics_storage_secret = {
     access_key = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
     secret_key = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
@@ -171,8 +175,11 @@ module "cert-manager" {
 module "longhorn" {
   count = local.exoscale_csi ? 0 : 1
 
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.7.0"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.7.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=fix_storage_class_creation"
   # source = "../../devops-stack-module-longhorn"
+
+  target_revision = "fix_storage_class_creation"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
@@ -268,15 +275,17 @@ resource "dmsnitch_snitch" "alertmanager_deadmanssnitch_url" {
 
 module "kube-prometheus-stack" {
   # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v11.1.1"
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=ISDEVOPS-296"
-  # source = "../../devops-stack-module-kube-prometheus-stack/sks"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=ISDEVOPS-296"
+  source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
   target_revision = "ISDEVOPS-296"
 
-  cluster_name   = module.sks.cluster_name
-  base_domain    = module.sks.base_domain
-  subdomain      = local.subdomain
-  cluster_issuer = local.cluster_issuer
+  cluster_name        = module.sks.cluster_name
+  base_domain         = module.sks.base_domain
+  subdomain           = local.subdomain
+  enable_short_domain = false # TODO add a local for this
+  # cluster_issuer      = local.cluster_issuer # TODO Move this back to the local
+  cluster_issuer = module.cert-manager.cluster_issuers.production
   argocd_project = module.sks.cluster_name
   secrets_names  = module.secrets.secrets_names
 
@@ -284,6 +293,17 @@ module "kube-prometheus-stack" {
 
   oidc = module.oidc.oidc
 
+  alertmanager_enable_deadmanssnitch_url = true
+  alertmanager_slack_routes = [
+    {
+      name    = "is-devops-stack-alerts-watchdog"
+      channel = "#is-devops-stack-alerts"
+      matchers = [
+        "alertname=\"Watchdog\""
+      ]
+      continue = true
+    }
+  ]
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
     region      = resource.aws_s3_bucket.this["thanos"].region
@@ -291,8 +311,6 @@ module "kube-prometheus-stack" {
     # access_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
     # secret_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
   }
-
-  alertmanager_deadmanssnitch_url = resource.dmsnitch_snitch.alertmanager_deadmanssnitch_url.url
 
   dependency_ids = {
     argocd       = module.argocd_bootstrap.id
@@ -306,7 +324,7 @@ module "kube-prometheus-stack" {
 }
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v6.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v6.3.0"
   # source = "../../devops-stack-module-argocd"
 
   cluster_name   = module.sks.cluster_name
@@ -319,6 +337,10 @@ module "argocd" {
   server_secretkey         = module.argocd_bootstrap.argocd_server_secretkey
 
   app_autosync = local.app_autosync
+
+  high_availability = {
+    enabled = false
+  }
 
   admin_enabled = false
   exec_enabled  = true
