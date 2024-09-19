@@ -71,8 +71,8 @@ resource "dmsnitch_snitch" "alertmanager_deadmanssnitch_url" {
 }
 
 module "secrets" {
-  # source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//aws_secrets_manager?ref=feat/initial_implementation"
-  source = "git::https://github.com/lentidas/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-secrets.git//aws_secrets_manager?ref=feat/initial_implementation"
+  source = "git::https://github.com/camptocamp/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
   # source = "../../devops-stack-module-secrets/aws_secrets_manager"
   # source = "../../devops-stack-module-secrets/k8s_secrets"
 
@@ -183,8 +183,7 @@ module "cert-manager" {
 module "longhorn" {
   count = local.exoscale_csi ? 0 : 1
 
-  # source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.7.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=fix_storage_class_creation"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.8.0"
   # source = "../../devops-stack-module-longhorn"
 
   target_revision = "fix_storage_class_creation"
