@@ -1,5 +1,5 @@
 locals {
-  kubernetes_version       = "1.30.3"
+  kubernetes_version       = "1.31.0"
   cluster_name             = "gh-sks-cluster" # Must be unique for each DevOps Stack deployment in a single account.
   zone                     = "ch-gva-2"
   service_level            = "starter"

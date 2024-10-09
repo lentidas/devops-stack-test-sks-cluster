@@ -105,7 +105,7 @@ module "secrets" {
 }
 
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v8.1.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v8.2.0"
   # source = "../../devops-stack-module-traefik/sks"
 
   argocd_project = module.sks.cluster_name
@@ -183,10 +183,8 @@ module "cert-manager" {
 module "longhorn" {
   count = local.exoscale_csi ? 0 : 1
 
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.8.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.9.0"
   # source = "../../devops-stack-module-longhorn"
-
-  target_revision = "fix_storage_class_creation"
 
   cluster_name   = module.sks.cluster_name
   base_domain    = module.sks.base_domain
