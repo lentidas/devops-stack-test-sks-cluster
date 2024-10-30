@@ -27,8 +27,8 @@ terraform {
       version = "~> 2"
     }
     argocd = {
-      source  = "oboukili/argocd"
-      version = "~> 6"
+      source  = "argoproj-labs/argocd"
+      version = "~> 7"
     }
     keycloak = {
       source  = "mrparkers/keycloak"

@@ -50,7 +50,7 @@ module "oidc" {
 }
 
 module "argocd_bootstrap" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v6.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git//bootstrap?ref=v7.1.0"
   # source = "../../devops-stack-module-argocd/bootstrap"
 
   argocd_projects = {
@@ -72,9 +72,9 @@ resource "dmsnitch_snitch" "alertmanager_deadmanssnitch_url" {
 
 module "secrets" {
   # source = "git::https://github.com/camptocamp/devops-stack-module-secrets.git//aws_secrets_manager?ref=feat/initial_implementation"
-  source = "git::https://github.com/camptocamp/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
   # source = "../../devops-stack-module-secrets/aws_secrets_manager"
-  # source = "../../devops-stack-module-secrets/k8s_secrets"
+  source = "../../devops-stack-module-secrets/k8s_secrets"
 
   target_revision = "ISDEVOPS-296"
 
@@ -105,7 +105,7 @@ module "secrets" {
 }
 
 module "traefik" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v8.2.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v9.0.0"
   # source = "../../devops-stack-module-traefik/sks"
 
   argocd_project = module.sks.cluster_name
@@ -123,8 +123,11 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v8.6.0"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v9.0.1"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=fix/change-cluster-issuers-structure"
   # source = "../../devops-stack-module-cert-manager/sks"
+
+  target_revision = "fix/change-cluster-issuers-structure"
 
   argocd_project = module.sks.cluster_name
 
@@ -140,7 +143,7 @@ module "cert-manager" {
 
 # # TODO Create an external database as PoC
 # module "keycloak" {
-#   source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git?ref=v3.1.1"
+#   source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git?ref=v4.0.0"
 #   # source = "../../devops-stack-module-keycloak"
 
 #   cluster_name   = module.sks.cluster_name
@@ -159,7 +162,7 @@ module "cert-manager" {
 # }
 
 # module "oidc" {
-#   source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git//oidc_bootstrap?ref=v3.1.1"
+#   source = "git::https://github.com/camptocamp/devops-stack-module-keycloak.git//oidc_bootstrap?ref=v4.0.0"
 
 #   cluster_name   = module.sks.cluster_name
 #   base_domain    = module.sks.base_domain
@@ -183,7 +186,7 @@ module "cert-manager" {
 module "longhorn" {
   count = local.exoscale_csi ? 0 : 1
 
-  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v3.9.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-longhorn.git?ref=v4.0.0"
   # source = "../../devops-stack-module-longhorn"
 
   cluster_name   = module.sks.cluster_name
@@ -217,7 +220,7 @@ module "longhorn" {
 }
 
 module "loki-stack" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v9.0.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-loki-stack.git//sks?ref=v10.0.0"
   # source = "../../devops-stack-module-loki-stack/sks"
 
   argocd_project = module.sks.cluster_name
@@ -238,27 +241,29 @@ module "loki-stack" {
 }
 
 module "thanos" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v6.0.0"
-  # source = "../../devops-stack-module-thanos/sks"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v7.0.1"
+  source = "../../devops-stack-module-thanos/sks"
 
-  cluster_name   = module.sks.cluster_name
-  base_domain    = module.sks.base_domain
-  subdomain      = local.subdomain
-  cluster_issuer = local.cluster_issuer
-  argocd_project = module.sks.cluster_name
+  target_revision = "ISDEVOPS-296"
+
+  cluster_name        = module.sks.cluster_name
+  base_domain         = module.sks.base_domain
+  subdomain           = local.subdomain
+  cluster_issuer      = local.cluster_issuer
+  argocd_project      = module.sks.cluster_name
+  enable_short_domain = true # TODO add a local for this
+  secrets_names       = module.secrets.secrets_names
 
   app_autosync           = local.app_autosync
   enable_service_monitor = local.enable_service_monitor
+
+  oidc = module.oidc.oidc
 
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
     region      = resource.aws_s3_bucket.this["thanos"].region
     access_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
     secret_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
-  }
-
-  thanos = {
-    oidc = module.oidc.oidc
   }
 
   dependency_ids = {
@@ -271,7 +276,7 @@ module "thanos" {
 }
 
 module "kube-prometheus-stack" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v11.1.1"
+  # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v13.0.0"
   source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=ISDEVOPS-296"
   # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
@@ -321,7 +326,7 @@ module "kube-prometheus-stack" {
 }
 
 module "argocd" {
-  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v6.3.0"
+  source = "git::https://github.com/camptocamp/devops-stack-module-argocd.git?ref=v7.1.0"
   # source = "../../devops-stack-module-argocd"
 
   cluster_name   = module.sks.cluster_name
