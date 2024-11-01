@@ -86,6 +86,7 @@ provider "argocd" {
   port_forward_with_namespace = module.argocd_bootstrap.argocd_namespace
   insecure                    = true
   plain_text                  = true
+
   kubernetes {
     host                   = module.sks.kubernetes_host
     client_certificate     = module.sks.kubernetes_client_certificate

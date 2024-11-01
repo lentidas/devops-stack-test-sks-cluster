@@ -70,40 +70,6 @@ resource "dmsnitch_snitch" "alertmanager_deadmanssnitch_url" {
   alert_email = ["is-devops-stack-alert-aaaanyw3phgkla47zgvvbtydpy@camptocamp.slack.com"]
 }
 
-module "secrets" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-secrets.git//aws_secrets_manager?ref=feat/initial_implementation"
-  # source = "git::https://github.com/camptocamp/devops-stack-module-secrets.git//k8s_secrets?ref=ISDEVOPS-296"
-  # source = "../../devops-stack-module-secrets/aws_secrets_manager"
-  source = "../../devops-stack-module-secrets/k8s_secrets"
-
-  target_revision = "ISDEVOPS-296"
-
-  cluster_name   = module.sks.cluster_name
-  base_domain    = module.sks.base_domain
-  argocd_project = module.sks.cluster_name
-
-  app_autosync           = local.app_autosync
-  enable_service_monitor = local.enable_service_monitor
-
-  # aws_iam_access_key = {
-  #   create_iam_access_key = true
-  # }
-
-  alertmanager_deadmanssnitch_url = resource.dmsnitch_snitch.alertmanager_deadmanssnitch_url.url
-  alertmanager_slack_routes_api_urls = {
-    "is-devops-stack-alerts-watchdog" = var.alertmanager_slack_route_api_url,
-  }
-  metrics_storage_secret = {
-    access_key = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
-    secret_key = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
-  }
-  oidc_client_secret = module.oidc.oidc.client_secret
-
-  dependency_ids = {
-    argocd = module.argocd_bootstrap.id
-  }
-}
-
 module "traefik" {
   source = "git::https://github.com/camptocamp/devops-stack-module-traefik.git//sks?ref=v9.0.0"
   # source = "../../devops-stack-module-traefik/sks"
@@ -123,11 +89,8 @@ module "traefik" {
 }
 
 module "cert-manager" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v9.0.1"
-  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=fix/change-cluster-issuers-structure"
+  source = "git::https://github.com/camptocamp/devops-stack-module-cert-manager.git//sks?ref=v10.0.0"
   # source = "../../devops-stack-module-cert-manager/sks"
-
-  target_revision = "fix/change-cluster-issuers-structure"
 
   argocd_project = module.sks.cluster_name
 
@@ -241,23 +204,21 @@ module "loki-stack" {
 }
 
 module "thanos" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v7.0.1"
-  source = "../../devops-stack-module-thanos/sks"
+  source = "git::https://github.com/camptocamp/devops-stack-module-thanos.git//sks?ref=v7.0.1"
+  # source = "../../devops-stack-module-thanos/sks"
 
-  target_revision = "ISDEVOPS-296"
-
-  cluster_name        = module.sks.cluster_name
-  base_domain         = module.sks.base_domain
-  subdomain           = local.subdomain
-  cluster_issuer      = local.cluster_issuer
-  argocd_project      = module.sks.cluster_name
-  enable_short_domain = true # TODO add a local for this
-  secrets_names       = module.secrets.secrets_names
+  cluster_name   = module.sks.cluster_name
+  base_domain    = module.sks.base_domain
+  subdomain      = local.subdomain
+  cluster_issuer = local.cluster_issuer
+  argocd_project = module.sks.cluster_name
 
   app_autosync           = local.app_autosync
   enable_service_monitor = local.enable_service_monitor
 
-  oidc = module.oidc.oidc
+  thanos = {
+    oidc = module.oidc.oidc
+  }
 
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
@@ -276,47 +237,38 @@ module "thanos" {
 }
 
 module "kube-prometheus-stack" {
-  # source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v13.0.0"
-  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=ISDEVOPS-296"
+  source = "git::https://github.com/camptocamp/devops-stack-module-kube-prometheus-stack.git//sks?ref=v13.0.1"
   # source = "../../devops-stack-module-kube-prometheus-stack/sks"
 
-  target_revision = "ISDEVOPS-296"
-
-  cluster_name        = module.sks.cluster_name
-  base_domain         = module.sks.base_domain
-  subdomain           = local.subdomain
-  enable_short_domain = false # TODO add a local for this
-  # cluster_issuer      = local.cluster_issuer # TODO Move this back to the local
-  cluster_issuer = module.cert-manager.cluster_issuers.production
+  cluster_name   = module.sks.cluster_name
+  base_domain    = module.sks.base_domain
+  subdomain      = local.subdomain
+  cluster_issuer = local.cluster_issuer
   argocd_project = module.sks.cluster_name
-  secrets_names  = module.secrets.secrets_names
 
   app_autosync = local.app_autosync
 
-  oidc = module.oidc.oidc
+  prometheus = {
+    oidc = module.oidc.oidc
+  }
 
-  alertmanager_enable_deadmanssnitch_url = true
-  alertmanager_slack_routes = [
-    {
-      name    = "is-devops-stack-alerts-watchdog"
-      channel = "#is-devops-stack-alerts"
-      matchers = [
-        "alertname=\"Watchdog\""
-      ]
-      continue = true
-    }
-  ]
+  grafana = {
+    oidc = module.oidc.oidc
+  }
+
+  alertmanager = {
+    oidc = module.oidc.oidc
+  }
+
   metrics_storage = {
     bucket_name = resource.aws_s3_bucket.this["thanos"].id
     region      = resource.aws_s3_bucket.this["thanos"].region
-    # TODO Remove this after we release the External Secrets support
-    # access_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
-    # secret_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
+    access_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].key
+    secret_key  = resource.exoscale_iam_api_key.s3_iam_api_key["thanos"].secret
   }
 
   dependency_ids = {
     argocd       = module.argocd_bootstrap.id
-    secrets      = module.secrets.id
     traefik      = module.traefik.id
     cert-manager = module.cert-manager.id
     oidc         = module.oidc.id
